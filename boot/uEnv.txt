@@ -15,13 +15,13 @@ hardware=sun50iw1p1
 # Create empty file recovery.txt in root of this partition
 
 # To enable LCD or HDMI, if not changed it will use default (experimental)
-# disp_screen0=lcd or hdmi
+# disp_screen0=hdmi
 # disp_screen1=lcd or hdmi
-# disp_mode=screen0 or screen1 or dualhead or xinerama or clone
+# disp_mode=screen0
 
 # USB OTG port mode (experimental)
 # otg_mode=device or host or otg
-otg_mode=host
+otg_mode=device
 
 # Configure contiguous memory allocation
 # This maybe required to be enlarged for 4K displays
