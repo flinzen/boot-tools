@@ -30,7 +30,7 @@ fi
 
 if test "${fdt_hdmi_mode}" != ""; then
 	echo "HDMI mode: ${fdt_hdmi_mode}"
-	fdt set /soc@01c00000/boot_disp output_mode "<0x00000004>"
+	fdt set /soc@01c00000/boot_disp output_mode "<0x00000000>"
 	fdt set /soc@01c00000/disp@01000000 screen0_output_mode "${fdt_hdmi_mode}"
 	fdt set /soc@01c00000/disp@01000000 screen1_output_mode "${fdt_hdmi_mode}"
 fi
@@ -39,30 +39,51 @@ fi
 if test "${disp_screen0}" = "lcd"; then
 	echo "Using LCD for main screen"
 	fdt set /soc@01c00000/disp@01000000 screen0_output_type "<0x00000001>"
+	fdt set /soc@01c00000/boot_disp output_mode "<0x00000000>"
+
+	# enable LCD screen
+	fdt set /soc@01c00000/lcd0@01c0c000 status "okay"
 	fdt set /soc@01c00000/lcd0@01c0c000 lcd_used "<0x00000001>"
 
-	fdt set /soc@01c00000/boot_disp output_type "<0x00000001>"
+	# disable HDMI screen
+	fdt set /soc@01c00000/hdmi@01ee0000 status "disabled"
 
+	# enable touchpad
 	fdt set /soc@01c00000/ctp status "okay"
 	fdt set /soc@01c00000/ctp ctp_used "<0x00000001>"
 	fdt set /soc@01c00000/ctp ctp_name "gt911_DB2"
 elif test "${disp_screen0}" = "hdmi"; then
 	echo "Using HDMI for main screen"
+	fdt set /soc@01c00000/boot_disp output_mode "<0x00000000>"
 	fdt set /soc@01c00000/disp@01000000 screen0_output_type "<0x00000003>"
+
+	# enable HDMI screen
+	fdt set /soc@01c00000/hdmi@01ee0000 status "okay"
+
+	# disable LCD screen
+	fdt set /soc@01c00000/lcd0@01c0c000 status "disabled"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_used "<0x00000000>"
 fi
 
 # set display for screen1
 if test "${disp_screen1}" = "lcd"; then
 	echo "Using LCD for secondary screen"
 	fdt set /soc@01c00000/disp@01000000 screen1_output_type "<0x00000001>"
+
+	# enable LCD screen
+	fdt set /soc@01c00000/lcd0@01c0c000 status "okay"
 	fdt set /soc@01c00000/lcd0@01c0c000 lcd_used "<0x00000001>"
 
+	# enable touchpad
 	fdt set /soc@01c00000/ctp status "okay"
 	fdt set /soc@01c00000/ctp ctp_used "<0x00000001>"
 	fdt set /soc@01c00000/ctp ctp_name "gt911_DB2"
 elif test "${disp_screen1}" = "hdmi"; then
 	echo "Using HDMI for secondary screen"
 	fdt set /soc@01c00000/disp@01000000 screen1_output_type "<0x00000003>"
+
+	# enable HDMI screen
+	fdt set /soc@01c00000/hdmi@01ee0000 status "okay"
 fi
 
 # set disp_mode 
@@ -81,6 +102,11 @@ elif test "${disp_mode}" = "xinerama"; then
 elif test "${disp_mode}" = "clone"; then
 	echo "Clonning screen0 and screen1"
 	fdt set /soc@01c00000/disp@01000000 disp_mode "<0x00000004>"
+elif test "${disp_mode}" = "disabled"; then
+	echo "Disabling all screens"
+	fdt set /soc@01c00000/disp@01000000 disp_mode "<0x00000000>"
+	fdt set /soc@01c00000/hdmi@01ee0000 status "disabled"
+	fdt set /soc@01c00000/lcd0@01c0c000 status "disabled"
 fi
 
 # HDMI CEC
@@ -90,6 +116,21 @@ if test "${hdmi_cec}" = "2"; then
 else
 	echo "HDMI CEC is disabled"
 	fdt set /soc@01c00000/hdmi@01ee0000 hdmi_cec_support "<0x00000000>"
+fi
+
+# Pinebook LCD
+if test "${pinebook_lcd_mode}" = "batch1"; then
+	echo "Fixing LCD parameters to use Pinebook Batch 1"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_dclk_freq "<72>"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_vbp "<20>"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_vt "<860>"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_vspw "<5>"
+elif test "${pinebook_lcd_mode}" = "batch2"; then
+	echo "Fixing LCD parameters to use Pinebook Batch 2"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_dclk_freq "<77>"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_vbp "<7>"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_vt "<790>"
+	fdt set /soc@01c00000/lcd0@01c0c000 lcd_vspw "<4>"
 fi
 
 # DVI compatibility
@@ -125,6 +166,25 @@ elif test "${otg_mode}" = "otg"; then
 	fdt set /soc@01c00000/usbc0@0 usb_port_type "<0x00000002>"
 fi
 
+if test "${emmc_compat}" = "on"; then
+	echo "Enabling eMMC compatibility mode (Use SDR)..."
+	fdt rm /soc@01c00000/sdmmc@01C11000 mmc-ddr-1_8v;
+	fdt rm /soc@01c00000/sdmmc@01C11000 mmc-hs200-1_8v;
+	fdt rm /soc@01c00000/sdmmc@01C11000 mmc-hs400-1_8v;
+elif test "${emmc_compat}" = "150mhz"; then
+	echo "Enabling eMMC HS200 150MHz mode..."
+	fdt set /soc@01c00000/sdmmc@01C11000 max-frequency "<0x8F0D180>";
+elif test "${emmc_compat}" = "200mhz"; then
+	echo "Enabling eMMC HS200 200MHz mode..."
+	fdt set /soc@01c00000/sdmmc@01C11000 max-frequency "<0xBEBC200>";
+fi
+
+# Execute user command
+if test "${user_cmd}" != ""; then
+	echo "Executing ${user_cmd}..."
+	run user_cmd
+fi
+
 if test "${boot_part}" = ""; then
 	setenv boot_part "0:1"
 fi
@@ -132,10 +192,12 @@ fi
 # Re-order SD or eMMC to always be a first device when booting
 if test "${boot_part}" = "0:1"; then
 	echo "Booting from SD so moving eMMC definition..."
+	fdt resize
 	fdt dup /soc@01c00000/ sdmmc@01C11000 sdmmc@01C11001
 	fdt rm /soc@01c00000/sdmmc@01C11000/
 else
 	echo "Booting from eMMC so moving SD definition..."
+	fdt resize
 	fdt dup /soc@01c00000/ sdmmc@01c0f000 sdmmc@01c0f001
 	fdt rm /soc@01c00000/sdmmc@01c0f000/
 fi
