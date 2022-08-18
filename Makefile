@@ -64,7 +64,7 @@ build/scp_%.bin: build/%_linux.dtb blobs/scp.bin
 scp: build/scp_pinebook.bin build/scp_pine64.bin
 
 u-boot-pine64:
-	git clone --depth 1 --single-branch --branch=$(BRANCH) https://github.com/ayufan-pine64/u-boot-pine64.git
+	git clone --depth 1 --single-branch --branch=$(BRANCH) https://github.com/flinzen/u-boot-pine64.git
 
 u-boot-pine64/include/configs/sun50iw1p1.h: u-boot-pine64
 

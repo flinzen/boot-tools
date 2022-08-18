@@ -202,6 +202,7 @@ else
 	fdt rm /soc@01c00000/sdmmc@01c0f000/
 fi
 
+
 if test "${boot_filename}" = ""; then
 	# boot regular kernel
 	if fatload mmc ${boot_part} ${initrd_addr} recovery.txt; then
